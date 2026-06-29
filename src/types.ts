@@ -7,9 +7,11 @@ export interface App {
   desc: string
   badge?: string
   badgeKind?: BadgeKind
+  url?: string
+  icon?: string
 }
 
-export type Category = 'rh' | 'obras' | 'fin' | 'ti'
+export type Category = 'rh' | 'obras' | 'fin' | 'ti' | 'geral' | 'juridico' | 'admin'
 export type ActiveCat = 'all' | Category
 
 export interface AppState {

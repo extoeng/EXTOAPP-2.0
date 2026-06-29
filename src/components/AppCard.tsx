@@ -44,8 +44,11 @@ export function AppCard({ app, isFav, onOpen, onToggleFav }: Props) {
       "
     >
       <div className="flex items-start justify-between gap-[10px] mb-[14px]">
-        <div className="w-[46px] h-[46px] rounded-[12px] bg-tile-bg flex items-center justify-center text-icon-default flex-shrink-0">
-          {Icon && <Icon size={23} strokeWidth={1.7} />}
+        <div className="w-[46px] h-[46px] rounded-[12px] bg-tile-bg flex items-center justify-center text-icon-default flex-shrink-0 overflow-hidden">
+          {app.icon
+            ? <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
+            : Icon && <Icon size={23} strokeWidth={1.7} />
+          }
         </div>
         <button
           onClick={onToggleFav}

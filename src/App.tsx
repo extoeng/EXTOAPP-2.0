@@ -5,6 +5,8 @@ import type { AuthUser } from './services/auth'
 import { useNarrow } from './hooks/useNarrow'
 import { useGreeting } from './hooks/useGreeting'
 import { LoginPage } from './pages/LoginPage'
+import { ComunicadosPage } from './pages/ComunicadosPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
 import { Banner } from './components/Banner'
@@ -26,6 +28,7 @@ export default function App() {
 }
 
 function Hub({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+  const [page, setPage] = useState<{ name: 'home' } | { name: 'comunicados'; id: number } | { name: 'profile' }>({ name: 'home' })
   const [query, setQuery] = useState('')
   const [activeCat, setActiveCat] = useState<ActiveCat>('all')
   const [favs, setFavs] = useState<string[]>(DEFAULT_FAVS)
@@ -41,6 +44,11 @@ function Hub({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   }, [isNarrow])
 
   const openApp = (name: string) => {
+    const app = APPS.find(a => a.name === name)
+    if (app?.url) {
+      window.open(app.url, '_blank', 'noopener,noreferrer')
+      return
+    }
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     setToast(name)
     toastTimerRef.current = setTimeout(() => setToast(null), 2200)
@@ -85,6 +93,7 @@ function Hub({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
         onSetCat={setActiveCat}
         onClose={() => setMenuOpen(false)}
         onLogout={onLogout}
+        onOpenProfile={() => setPage({ name: 'profile' })}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -96,7 +105,23 @@ function Hub({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
         />
 
         <div className="flex flex-1 overflow-hidden">
-          <main className="flex-1 overflow-y-auto px-[24px] pt-[26px] pb-[64px] scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+          {page.name === 'comunicados' && (
+            <div className="flex-1 overflow-hidden bg-bg-app">
+              <ComunicadosPage
+                initialId={page.id}
+                onBack={() => setPage({ name: 'home' })}
+              />
+            </div>
+          )}
+          {page.name === 'profile' && (
+            <div className="flex-1 overflow-hidden bg-bg-app">
+              <ProfilePage
+                user={user}
+                onBack={() => setPage({ name: 'home' })}
+              />
+            </div>
+          )}
+          <main className={`flex-1 overflow-y-auto px-[24px] pt-[26px] pb-[64px] scrollbar-none${page.name !== 'home' ? ' hidden' : ''}`} style={{ scrollbarWidth: 'none' as const }}>
           <div className="max-w-[1180px] mx-auto">
 
             <div className="mb-[28px]">
@@ -108,7 +133,14 @@ function Hub({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
               </div>
             </div>
 
-            {showExtras && <Banner />}
+            {showExtras && (
+              <div>
+                <h3 className="m-0 mb-[14px] font-archivo font-semibold text-[13px] leading-none tracking-[0.08em] uppercase text-label">
+                  Comunicados
+                </h3>
+                <Banner onRead={(id) => setPage({ name: 'comunicados', id })} />
+              </div>
+            )}
 
             {showExtras && <RecentShortcuts apps={recentApps} onOpen={openApp} />}
 
@@ -116,7 +148,7 @@ function Hub({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
               <div className="mt-[30px]">
                 <div className="flex items-baseline gap-[10px] mb-[14px]">
                   <h3 className="m-0 font-archivo font-semibold text-[13px] leading-none tracking-[0.08em] uppercase text-label">
-                    Favoritos
+                    APPs Favoritos
                   </h3>
                   <span className="font-hanken font-medium text-[12px] text-label-2">
                     {favApps.length} {favApps.length === 1 ? 'aplicativo' : 'aplicativos'}
@@ -151,7 +183,7 @@ function Hub({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
           </div>
           </main>
 
-          {!isNarrow && <RightPanel />}
+          {!isNarrow && page.name === 'home' && <RightPanel />}
         </div>
       </div>
 

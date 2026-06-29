@@ -1,18 +1,25 @@
-import { Home, Users, Building2, Wallet, LifeBuoy, LogOut, X } from 'lucide-react'
-import type { ActiveCat } from '../types'
+import { Home, Users, Building2, Wallet, LifeBuoy, LogOut, X, Globe, Scale, ClipboardList } from 'lucide-react'
+import type { ActiveCat, Category } from '../types'
 import type { AuthUser } from '../services/auth'
+import { APPS } from '../data/apps'
 import logoUrl from '../assets/exto-logo-transparent.png'
 
 const NAV_MENU = [
   { id: 'all' as ActiveCat, label: 'Início', Icon: Home },
 ]
 
-const NAV_CATS = [
-  { id: 'rh'    as ActiveCat, label: 'RH & Pessoas',       Icon: Users },
-  { id: 'obras' as ActiveCat, label: 'Obras & Operações',  Icon: Building2 },
-  { id: 'fin'   as ActiveCat, label: 'Financeiro',         Icon: Wallet },
-  { id: 'ti'    as ActiveCat, label: 'Suporte & TI',       Icon: LifeBuoy },
+const ALL_CATS: { id: Category; label: string; Icon: React.ElementType }[] = [
+  { id: 'geral',    label: 'Geral',              Icon: Globe },
+  { id: 'rh',       label: 'RH & Pessoas',       Icon: Users },
+  { id: 'obras',    label: 'Obras & Operações',  Icon: Building2 },
+  { id: 'fin',      label: 'Financeiro',         Icon: Wallet },
+  { id: 'ti',       label: 'Suporte & TI',       Icon: LifeBuoy },
+  { id: 'admin',    label: 'Administração',      Icon: ClipboardList },
+  { id: 'juridico', label: 'Jurídico',           Icon: Scale },
 ]
+
+const ACTIVE_CATS = new Set(APPS.map(a => a.cat))
+const NAV_CATS = ALL_CATS.filter(c => ACTIVE_CATS.has(c.id))
 
 interface Props {
   activeCat: ActiveCat
@@ -22,6 +29,7 @@ interface Props {
   onSetCat: (cat: ActiveCat) => void
   onClose: () => void
   onLogout: () => void
+  onOpenProfile: () => void
 }
 
 function NavItem({ id, label, Icon, activeCat, onClick }: {
@@ -53,7 +61,7 @@ function NavItem({ id, label, Icon, activeCat, onClick }: {
   )
 }
 
-export function Sidebar({ activeCat, isNarrow, menuOpen, user, onSetCat, onClose, onLogout }: Props) {
+export function Sidebar({ activeCat, isNarrow, menuOpen, user, onSetCat, onClose, onLogout, onOpenProfile }: Props) {
   const handleCat = (cat: ActiveCat) => {
     onSetCat(cat)
     if (isNarrow) onClose()
@@ -112,17 +120,22 @@ export function Sidebar({ activeCat, isNarrow, menuOpen, user, onSetCat, onClose
       {/* User card */}
       <div className="p-[14px]">
         <div className="flex items-center gap-[11px] px-[8px] py-[8px] rounded-[12px]">
-          <div className="w-[40px] h-[40px] rounded-full bg-avatar-bg text-white flex items-center justify-center font-archivo font-semibold text-[14px] flex-shrink-0">
-            {user.initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-archivo font-semibold text-[14px] leading-[1.2] text-ink whitespace-nowrap overflow-hidden text-ellipsis">
-              {user.name}
+          <button
+            onClick={onOpenProfile}
+            className="flex items-center gap-[11px] flex-1 min-w-0 border-none bg-transparent p-0 cursor-pointer rounded-[10px] transition-colors duration-150 hover:bg-tile-bg -mx-[6px] px-[6px] py-[4px] text-left"
+          >
+            <div className="w-[40px] h-[40px] rounded-full bg-avatar-bg text-white flex items-center justify-center font-archivo font-semibold text-[14px] flex-shrink-0">
+              {user.initials}
             </div>
-            <div className="font-hanken font-normal text-[12px] leading-[1.3] text-text-faint whitespace-nowrap overflow-hidden text-ellipsis">
-              {user.role}
+            <div className="flex-1 min-w-0">
+              <div className="font-archivo font-semibold text-[14px] leading-[1.2] text-ink whitespace-nowrap overflow-hidden text-ellipsis">
+                {user.name}
+              </div>
+              <div className="font-hanken font-normal text-[12px] leading-[1.3] text-text-faint whitespace-nowrap overflow-hidden text-ellipsis">
+                {user.role}
+              </div>
             </div>
-          </div>
+          </button>
           <button
             title="Sair"
             onClick={onLogout}

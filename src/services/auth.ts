@@ -86,6 +86,7 @@ interface RawApp {
   icon_path: string
   category: string
   permissions: string[]
+  sso_enabled?: boolean
 }
 
 /** Apps que o usuário pode acessar, mapeados para o tipo App do hub. */
@@ -100,7 +101,20 @@ export async function fetchApps(): Promise<App[] | null> {
     desc: a.description,
     url: a.url || undefined,
     icon: a.icon_path || undefined,
+    ssoEnabled: a.sso_enabled ?? false,
   }))
+}
+
+/**
+ * Pede um code de curta duração para autenticar num app satélite (SSO
+ * cross-domain). O app satélite troca esse code pelos próprios tokens
+ * chamando /auth/exchange-code no backend.
+ */
+export async function getSatelliteCode(): Promise<string | null> {
+  const res = await apiFetch('/auth/satellite-code', { method: 'POST' })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data?.code ?? null
 }
 
 /** Atualiza ramal/celular. */

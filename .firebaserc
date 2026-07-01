@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "extoapp-11650"
-  }
+  },
+  "targets": {
+    "extoapp-11650": {
+      "hosting": {
+        "hub": [
+          "extoapp-hub"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

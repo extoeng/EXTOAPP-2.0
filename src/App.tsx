@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { APPS, CAT_ORDER, CAT_LABELS, RECENT_IDS, DEFAULT_FAVS } from './data/apps'
 import type { ActiveCat, App as AppType } from './types'
 import type { AuthUser } from './services/auth'
-import { getMe, fetchApps, logout as apiLogout } from './services/auth'
-import { getToken } from './services/api'
+import { getMe, fetchApps, getSatelliteCode, logout as apiLogout } from './services/auth'
+import { getToken, setToken } from './services/api'
 import { useNarrow } from './hooks/useNarrow'
 import { useGreeting } from './hooks/useGreeting'
 import { LoginPage } from './pages/LoginPage'
@@ -39,6 +39,13 @@ export default function App() {
     setUser(null)
   }
 
+  // Sessão morreu no servidor (refresh já tentado e falhou) — não vale a
+  // pena chamar /auth/logout com um token já inválido, só limpa localmente.
+  const handleSessionExpired = () => {
+    setToken(null)
+    setUser(null)
+  }
+
   if (restoring) {
     return <div className="h-screen bg-bg-app" />
   }
@@ -47,10 +54,24 @@ export default function App() {
     return <LoginPage onLogin={setUser} />
   }
 
-  return <Hub user={user} onLogout={handleLogout} onUserChange={setUser} />
+  return (
+    <Hub
+      user={user}
+      onLogout={handleLogout}
+      onUserChange={setUser}
+      onSessionExpired={handleSessionExpired}
+    />
+  )
 }
 
-function Hub({ user, onLogout, onUserChange }: { user: AuthUser; onLogout: () => void; onUserChange: (u: AuthUser) => void }) {
+interface HubProps {
+  user: AuthUser
+  onLogout: () => void
+  onUserChange: (u: AuthUser) => void
+  onSessionExpired: () => void
+}
+
+function Hub({ user, onLogout, onUserChange, onSessionExpired }: HubProps) {
   const [page, setPage] = useState<{ name: 'home' } | { name: 'comunicados'; id: number } | { name: 'profile' }>({ name: 'home' })
   const [query, setQuery] = useState('')
   const [activeCat, setActiveCat] = useState<ActiveCat>('all')
@@ -75,15 +96,35 @@ function Hub({ user, onLogout, onUserChange }: { user: AuthUser; onLogout: () =>
     })
   }, [])
 
-  const openApp = (name: string) => {
+  const openApp = async (name: string) => {
     const app = apps.find(a => a.name === name)
-    if (app?.url) {
-      window.open(app.url, '_blank', 'noopener,noreferrer')
+    if (!app?.url) {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      setToast(name)
+      toastTimerRef.current = setTimeout(() => setToast(null), 2200)
       return
     }
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    setToast(name)
-    toastTimerRef.current = setTimeout(() => setToast(null), 2200)
+
+    if (app.ssoEnabled) {
+      // Abre a aba já (síncrono, dentro do gesto de clique) para não ser
+      // bloqueada como pop-up — o navegador só permite window.open sem bloqueio
+      // se ele ocorrer antes de qualquer await.
+      const janela = window.open('', '_blank')
+      const code = await getSatelliteCode()
+      if (!code) {
+        // apiFetch já tentou renovar o access e falhou — sessão está morta.
+        // Não navega pro satélite sem code; volta pro login (fluxo já existente).
+        onSessionExpired()
+        janela?.close()
+        return
+      }
+      const target = `${app.url}${app.url.includes('?') ? '&' : '?'}code=${encodeURIComponent(code)}`
+      if (janela) janela.location.href = target
+      else window.open(target, '_blank', 'noopener,noreferrer') // fallback se a 1ª chamada foi bloqueada
+      return
+    }
+
+    window.open(app.url, '_blank', 'noopener,noreferrer')
   }
 
   const toggleFav = (id: string) => {

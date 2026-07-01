@@ -9,6 +9,7 @@ export interface App {
   badgeKind?: BadgeKind
   url?: string
   icon?: string
+  ssoEnabled?: boolean
 }
 
 export type Category = 'rh' | 'obras' | 'fin' | 'ti' | 'geral' | 'juridico' | 'admin'
